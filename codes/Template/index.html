@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potato Plant Disease Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .upload-btn:hover {
+            background-color: #45a049;
+        }
+        #image-preview {
+            margin-top: 20px;
+            display: none;
+        }
+        #prediction-result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Potato Plant Disease Classifier</h1>
+        <form id="upload-form" enctype="multipart/form-data">
+            <label for="image-upload" class="upload-btn">Choose an image</label>
+            <input type="file" id="image-upload" accept="image/*">
+        </form>
+        <img id="image-preview" src="#" alt="Uploaded Image" width="300">
+        <div id="prediction-result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const input = document.getElementById('image-upload');
+        const preview = document.getElementById('image-preview');
+        const resultDiv = document.getElementById('prediction-result');
+
+        input.addEventListener('change', function () {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+                uploadImage(file);
+            }
+        });
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                console.log('Prediction data:', data);
+                displayPrediction(data);
+            } catch (error) {
+                console.error('Error:', error.message);
+            }
+        }
+
+        function displayPrediction(data) {
+            // Check if data contains the expected properties
+            if (!data || !data.class || !data.confidence || !data.additional_message) {
+                console.error('Prediction data is missing required properties:', data);
+                resultDiv.innerHTML = '<p>Error: Prediction data is missing required properties</p>';
+                return;
+            }
+
+            // Display prediction result
+            resultDiv.innerHTML = `
+                <p><strong>Predicted Class:</strong> ${data.class}</p>
+                <p><strong>Confidence:</strong> ${data.confidence.toFixed(2)}</p>
+                <p>${data.additional_message}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
